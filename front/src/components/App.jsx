@@ -10,6 +10,7 @@ const App = () => {
     <Router>
       <nav  className="navbar">
         <Link className="navbar_button" to="/">Login</Link>
+        <Link className="navbar_button" to="/cadastro">Cadastro</Link>
         <Link className="navbar_button" to="/adicionaGastos">Adicionar Gasto</Link>
         <Link className="navbar_button" to="/lista">Lista de Gastos</Link>
         <Link className="navbar_button" to="/graficos">Gráficos</Link>

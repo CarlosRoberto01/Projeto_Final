@@ -19,4 +19,14 @@ model Gasto {
   valor     Float
   categoria String
   data      DateTime @default(now())
+  usuarioId Int
+  usuario   Usuario  @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+}
+
+model Usuario {
+  id    Int    @id @default(autoincrement())
+  nome  String
+  email String @unique
+  senha String
+  gastos Gasto[]
 }

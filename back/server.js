@@ -1,3 +1,7 @@
+const jwt = require("jsonwebtoken");
+const bcrypt = require("bcryptjs");
+const verificarToken = require("./authMiddleware");
+
 const express = require("express"); // Importa o express
 const app = express(); //instancia o express
 
@@ -17,12 +21,46 @@ app.get("/", (req, res) => {
 });
 
 // Rota para listar todos os gastos
-app.get("/gastos", async (req, res) => {
+app.get("/gastos", verificarToken , async (req, res) => {
   try {
-    const gastos = await prisma.gasto.findMany();
+    const gastos = await prisma.gasto.findMany({ where: { usuarioId: req.usuarioId } });
     res.json(gastos);
   } catch (error) {
     res.status(500).json({ error: "Erro ao buscar gastos" });
+  }
+});
+
+// Rota para cadastro de usuário
+app.post("/cadastro" , async (req, res) => {
+  try {
+    const { nome, email, senha } = req.body;
+    const senhaCriptografada = await bcrypt.hash(senha, 10);
+
+    const novoUsuario = await prisma.usuario.create({
+      data: { nome, email, senha: senhaCriptografada },
+    });
+
+    res.status(201).json({ message: "Usuário cadastrado com sucesso!" });
+  } catch (error) {
+    res.status(500).json({ error: "Erro ao cadastrar usuário." });
+  }
+});
+
+// Rota de login para gerar JWT
+app.post("/login", async (req, res) => {
+  try {
+    const { email, senha } = req.body;
+    const usuario = await prisma.usuario.findUnique({ where: { email } });
+
+    if (!usuario || !(await bcrypt.compare(senha, usuario.senha))) {
+      return res.status(401).json({ error: "Credenciais inválidas" });
+    }
+
+    const token = jwt.sign({ id: usuario.id }, "seu_segredo_super_secreto", { expiresIn: "1h" });
+
+    res.json({ message: "Login realizado com sucesso!", token });
+  } catch (error) {
+    res.status(500).json({ error: "Erro ao fazer login." });
   }
 });
 
@@ -43,11 +81,11 @@ app.get("/gastos/:id", async (req, res) => {
 });
 
 // Rota para adicionar um novo gasto
-app.post("/gastos", async (req, res) => {
+app.post("/gastos", verificarToken , async (req, res) => {
   try {
     const { descricao, valor, categoria, data } = req.body;
     const novoGasto = await prisma.gasto.create({
-      data: { descricao, valor: parseFloat(valor), categoria, data: new Date(data) },
+      data: { descricao, valor: parseFloat(valor), categoria, data: new Date(data), usuarioId: req.usuarioId},
     });
     res.status(201).json(novoGasto);
   } catch (error) {
